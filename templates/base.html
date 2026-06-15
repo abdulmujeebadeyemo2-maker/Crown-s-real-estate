@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <title>Crown's Real Estate</title>
+    
+    <link rel="stylesheet"
+        href="{{url_for('static',filename='style.css')}}">
+
+</head>
+
+<body>
+    {% if not session.get('admin_logged_in')%}
+    <div class="navbar">
+        <a href="{{url_for('home')}}">Home</a>
+        <a href="{{url_for('about')}}">About</a>
+        <a href="{{url_for('contact')}}">Contact</a>
+
+        {% if session.get('user_id') %}
+        <a href="{{ url_for('dashboard') }}" style="color:gold;">My Dashboard</a>
+        <span style="color:gold; margin-right: 20px;">Hi, {{ session['user_name'] }}</span>
+        <a href="{{url_for('user_logout')}}">Logout</a>
+        {% else %}
+        <a href="{{url_for('user_login')}}">Login</a>
+        <a href="{{url_for('user_register')}}">Register</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="container">
+
+        {% block content %}
+
+        {% endblock %}
+
+    </div>
+    <footer class="footer">
+        <p>
+            © 2026 Crown's Real Estate |
+            All rights reserved
+        </p>
+
+        <a href="/admin" style="
+           color: transparent; 
+           font-size: 1px;
+           padding: 15px;
+           user-select: none;">•
+        </a>
+
+    </footer>
+
+</body>
+</html>
+
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.shiftKey && e.key === 'K') {
+        window.location.href = '/admin';
+    }
+});
+</script>

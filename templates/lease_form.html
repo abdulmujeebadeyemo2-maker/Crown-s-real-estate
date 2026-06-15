@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+<div class="dashboard-content" style="margin-left:0;">
+    <div class="section-header">
+        <h1>Set Lease Duration</h1>
+        <p>How many years is this lease for?</p>
+    </div>
+    <div class="admin-form">
+        <form method="POST" action="{{url_for('lease_property', property_id, user_id=user_id)}}">
+            <input type="number" name="duration_years"
+                   placeholder="Number of years e.g. 2"
+                   min="1" max="99" required>
+            <button type="submit">Confirm Lease</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

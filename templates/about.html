@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='pages.css') }}">
+
+<!-- ABOUT HERO -->
+<section class="page-hero">
+    <div class="page-hero-overlay">
+        <p class="page-tag">✦ Who We Are</p>
+        <h1>About <span class="gold">Crown's</span> Real Estate</h1>
+        <p class="page-sub">Nigeria's most trusted name in luxury and affordable property.</p>
+    </div>
+</section>
+
+<!-- OUR STORY -->
+<section class="about-story">
+    <div class="about-story-inner">
+        <div class="story-text">
+            <p class="section-tag">✦ Our Story</p>
+            <h2>Built on <span class="gold">Trust</span> & Excellence</h2>
+            <p>Crown's Real Estate was founded with one simple vision — to make finding your dream property an experience, not a transaction. Over the years, we have grown into one of Nigeria's most respected real estate agencies, connecting hundreds of families and investors with properties that match their lifestyle and goals.</p>
+            <p>We believe that a home is more than four walls. It is where memories are made, families grow, and futures are built. That belief drives everything we do.</p>
+        </div>
+        <div class="story-stats">
+            <div class="story-stat">
+                <h3>15+</h3>
+                <p>Years in Business</p>
+            </div>
+            <div class="story-stat">
+                <h3>1,200+</h3>
+                <p>Properties Sold</p>
+            </div>
+            <div class="story-stat">
+                <h3>500+</h3>
+                <p>Active Listings</p>
+            </div>
+            <div class="story-stat">
+                <h3>98%</h3>
+                <p>Client Satisfaction</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- OUR VALUES -->
+<section class="values-section">
+    <div class="section-title-block">
+        <p class="section-tag">✦ What We Stand For</p>
+        <h2>Our Core <span class="gold">Values</span></h2>
+    </div>
+    <div class="values-grid">
+        <div class="value-card">
+            <div class="value-icon">🏆</div>
+            <h3>Excellence</h3>
+            <p>We hold ourselves to the highest standards in every transaction, every listing, and every client relationship.</p>
+        </div>
+        <div class="value-card">
+            <div class="value-icon">🤝</div>
+            <h3>Integrity</h3>
+            <p>Honesty and transparency are the foundation of everything we do. Our clients always come first.</p>
+        </div>
+        <div class="value-card">
+            <div class="value-icon">💡</div>
+            <h3>Innovation</h3>
+            <p>We leverage modern technology to make property search, buying, and renting seamless and efficient.</p>
+        </div>
+        <div class="value-card">
+            <div class="value-icon">🌍</div>
+            <h3>Community</h3>
+            <p>We are committed to building stronger communities by connecting the right people to the right places.</p>
+        </div>
+    </div>
+</section>
+
+<!-- TEAM SECTION -->
+<section class="team-section">
+    <div class="section-title-block">
+        <p class="section-tag">✦ The People Behind Crown's</p>
+        <h2>Meet Our <span class="gold">Team</span></h2>
+        <p class="section-sub">Experienced professionals dedicated to your success</p>
+    </div>
+    <div class="team-grid">
+        <div class="team-card">
+            <div class="team-avatar">👨‍💼</div>
+            <h3>Adeyemo Nazeem. (AKA Mr Crown)</h3>
+            <p>Founder & CEO</p>
+            <span>15 years in Nigerian real estate market</span>
+        </div>
+        <div class="team-card">
+            <div class="team-avatar">👩‍💼</div>
+            <h3>Chioma Okafor</h3>
+            <p>Head of Sales</p>
+            <span>Expert in luxury property transactions</span>
+        </div>
+        <div class="team-card">
+            <div class="team-avatar">👨‍💼</div>
+            <h3>Emeka Nwosu</h3>
+            <p>Property Manager</p>
+            <span>Specialist in leasing and rentals</span>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="page-cta">
+    <h2>Ready to Work With <span class="gold">Us?</span></h2>
+    <p>Let our team help you find the perfect property today.</p>
+    <div class="cta-buttons">
+        <a href="{{ url_for('contact') }}" class="cta-btn-primary">Contact Us</a>
+        <a href="{{ url_for('home') }}" class="cta-btn-secondary">Browse Properties</a>
+    </div>
+</section>
+
+{% endblock %}

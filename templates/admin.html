@@ -1,0 +1,359 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>CROWN'S</h2>
+            <p>Admin Panel</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" onclick="showSection('overview', this)">
+                <span class="nav-icon">📊</span> Overview
+            </a>
+            <a href="#" class="nav-item" onclick="showSection('add-property', this)">
+                <span class="nav-icon">＋</span> Add Property
+            </a>
+            <a href="#" class="nav-item" onclick="showSection('manage-properties', this)">
+                <span class="nav-icon">🏠</span> Manage Properties
+            </a>
+            <a href="#" class="nav-item" onclick="showSection('inquiries', this)">
+                <span class="nav-icon">✉</span> Inquiries
+                {% if inquiries %}
+                <span class="badge">{{ inquiries|length }}</span>
+                {% endif %}
+            </a>
+            <a href="#" class="nav-item" onclick="showSection('sold', this)">
+                <span class="nav-icon">💰</span> Sold Properties
+            </a>
+            <a href="#" class="nav-item" onclick="showSection('leased', this)">
+                <span class="nav-icon">🔑</span> Leased Properties
+            </a>
+            <a href="#" class="nav-item" onclick="showSection('messages', this)">
+                <span class="nav-icon">💬</span></i></span> Messages
+            </a>
+            <a href="#" class="nav-item" onclick="showSection('broadcast', this)">
+                <span class="nav-icon">🎙</i></span> Broadcast
+            </a>
+            <a href="#" class="nav-item" onclick="showSection('complaints', this)">
+               <span class="nav-icon">‼</i></span> Complaints
+            </a>
+            <div class="sidebar-divider"></div>
+            <a href="{{url_for('home')}}" class="nav-item" target="_blank">
+                <span class="nav-icon">🌐</span>View Site
+            </a>
+            <a href="{{ url_for('logout') }}" class="nav-item logout">
+                <span class="nav-icon">🚪</span> Logout
+            </a>
+        </nav>
+    </div>
+
+    <!-- Sidebar toggle button -->
+    <button class="sidebar-toggle" id="toggleBtn" onclick="toggleSidebar()">☰</button>
+
+    <!-- Main dashboard content -->
+    <div class="dashboard-content" id="dashboardContent">
+
+        <!-- OVERVIEW SECTION -->
+        <div class="dash-section active" id="overview">
+            <div class="section-header">
+                <h1>Overview</h1>
+                <p>Welcome back, Admin. Here's a summary of your platform.</p>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🏠</div>
+                    <div class="stat-info">
+                        <h2>{{ property_count }}</h2>
+                        <p>Properties</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👤</div>
+                    <div class="stat-info">
+                        <h2>{{ user_count }}</h2>
+                        <p>Registered Users</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✉</div>
+                    <div class="stat-info">
+                        <h2>{{ inquiry_count }}</h2>
+                        <p>Inquiries</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADD PROPERTY SECTION -->
+        <div class="dash-section" id="add-property">
+            <div class="section-header">
+                <h1>Add New Property</h1>
+                <p>Fill in the details below to list a new property</p>
+            </div>
+            <div class="admin-form">
+                <form action="{{ url_for('add_property') }}" method="POST" enctype="multipart/form-data">
+                    <div class="form-grid">
+                        <input type="text" name="name" placeholder="Property Name" required>
+                        <input type="text" name="Price" placeholder="Price (₦)" required>
+                        <input type="text" name="Location" placeholder="Location" required>
+                        <select name="Status" required>
+                            <option value="">Select Status</option>
+                            <option value="For Sale">For Sale</option>
+                            <option value="For Rent">For Rent</option>
+                        </select>
+                        <select name="type" required>
+                            <option value="">Select Type</option>
+                            <option value="duplex">Duplex</option>
+                            <option value="mansion">Mansion</option>
+                            <option value="apartment">Apartment</option>
+                            <option value="bungalow">Bungalow</option>
+                            <option value="penthouse">Penthouse</option>
+                            <option value="land">Land</option>
+                        </select>
+                    </div>
+                    <textarea name="description" placeholder="Property Description"></textarea>
+                    <div class="file-upload">
+                        <label>Upload Images</label>
+                        <input type="file" name="images" multiple accept="image/*">
+                    </div>
+                    <button type="submit">Add Property</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- MANAGE PROPERTIES SECTION -->
+        <div class="dash-section" id="manage-properties">
+            <div class="section-header">
+                <h1>Manage Properties</h1>
+                <p>{{ property_count }} properties listed</p>
+            </div>
+            <div class="property-table">
+                {% for property in properties %}
+                <div class="table-card">
+                    <img src="{{ url_for('static', filename='images/' + property[7]) }}" alt="{{ property[1] }}">
+                    <div class="table-card-info">
+                        <h3>{{ property[1] }}</h3>
+                        <p>📍 {{ property[3] }}</p>
+                        <p>💶 ₦{{ "{:,}".format(property[2]|int) }}</p>
+                        <p>🏷 {{ property[4] }} · {{ property[5] }}</p>
+                    </div>
+                    <div class="table-card-actions">
+                        <a href="{{ url_for('edit_property', id=property[0]) }}" class="view-btn">✏ Edit</a>
+                        {% if property[4] not in ['Sold'], ['Leases'] %}
+                        <a href="{{url_for('users_list', property_id=property[0])}}" class="view-btn">
+                            {% if property[4] == 'For Sale'%}Sell{% else %}List{% endif %}</a>
+                        {% else %}
+                        <span style="color: #555; font-size: 13px; padding: 8px;">
+                            {% if property[4] == 'Sold' %}✅Sold{% else %}✅Leases{% endif%}
+                        </span>
+                        {% endif %}
+                        <a href="{{ url_for('delete_property', id=property[0]) }}" class="delete-btn" onclick="return confirm('Delete this property ?')">🗑Delete</a>
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-msg">No properties listed yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- INQUIRIES SECTION -->
+        <div class="dash-section" id="inquiries">
+            <div class="section-header">
+                <h1>Property Inquiries</h1>
+                <p>{{ inquiry_count }} inquiries received</p>
+            </div>
+            <div class="inquiry-list">
+                {% for inquiry in inquiries %}
+                <div class="inquiry-card">
+                    <!-- Property info at the top -->
+                    {% for property in properties if property[0] == inquiry[1] %}
+                    <div class="inquiry-property-info">
+                        <img src="{{ url_for('static', filename='images/' + property[7]) }}"
+                            alt="{{ property[1] }}">
+                        <div>
+                            <h4>{{ property[1] }}</h4>
+                            <p>📍 {{ property[3] }} &nbsp;|&nbsp;
+                             💰 ₦{{ "{:,}".format(property[2]|int) }} &nbsp;|&nbsp;
+                             🏷️ {{ property[4] }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <!-- Inquiry details -->
+                    <div class="inquiry-top">
+                        <span class="inquiry-name">{{ inquiry[2] }}</span>
+                        <span class="inquiry-id">Inquiry #{{ inquiry[0] }}</span>
+                    </div>
+                    <p>📞 {{ inquiry[3] }}</p>
+                    <p>✉️ {{ inquiry[4] }}</p>
+                    <p class="inquiry-msg">"{{ inquiry[5] }}"</p>
+                    <a href="{{ url_for('delete_inquiry', inquiry_id=inquiry[0]) }}"
+                        class="delete-btn"
+                        onclick="return confirm('Delete this inquiry?')">
+                         🗑 Delete
+                    </a>
+                </div>
+                {% else %}
+                <p class="empty-msg">No inquiries yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <!--SOLD PROPERTIES-->
+        <div class="dash-section" id="sold">
+            <div class="section-header">
+                <h1>Sold Properties</h1>
+                <p>{{ sales|length}} properties sold</p>
+            </div>
+            <div class="inquiry-list">
+                {% for sale in sales %}
+                <div class="inquiry-card">
+                    <div class="inquirt-top">
+                        <span class="inquiry-name">{{sale[1]}}</span>
+                        <span class="inquiry_id">{{sale[4]}}</span>
+                    </div>
+                    <p>🙍‍♂️{{sale[2]}}</p>
+                    <p>✉{{sale[3]}}</p>
+                </div>
+                {% else %}
+                <p class="empty-msg">No properties sold yet</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!--LEASED PROPERTIES-->
+        <div class="dash-section" id="leased">
+            <div class="section-header">
+                <h1>Leased Properties</h1>
+                <p>{{ leases|length}} properties leased</p>
+            </div>
+            <div class="inquiry-list">
+                {% for lease in leases %}
+                <div class="inquiry-card">
+                    <div class="inquirt-top">
+                        <span class="inquiry-name">{{lease[1]}}</span>
+                        <span class="inquiry_id">{{lease[4]}}</span>
+                    </div>
+                    <p>🙍‍♂️{{lease[2]}}</p>
+                    <p>✉{{lease[3]}}</p>
+                </div>
+                {% else %}
+                <p class="empty-msg">No properties leased yet</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- BROADCAST MESSAGE -->
+        <div class="dash-section" id="broadcast">
+            <div class="section-header">
+                <h1>Broadcast Message</h1>
+                <p>Send a message to all users</p>
+            </div>
+            <div class="admin-form">
+                <form method="POST" action="{{ url_for('broadcast_message') }}">
+                    <textarea name="message"
+                        placeholder="Type your message to all users..."
+                        required></textarea>
+                    <button type="submit">Send to All Users</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- DIRECT MESSAGES -->
+        <div class="dash-section" id="messages">
+            <div class="section-header">
+                <h1>Direct Messages</h1>
+                <p>Messages between you and users</p>
+            </div>
+            {% for lease in leases %}
+            <div class="inquiry-card">
+                <div class="inquiry-top">
+                    <span class="inquiry-name">{{ lease[2] }} — {{ lease[1] }}</span>
+                </div>
+                {% for dm in all_messages if dm[1] == lease[5] %}
+                <div style="padding: 8px; margin: 5px 0;
+                    background: rgba(255,255,255,0.03);
+                    border-radius: 8px;">
+                    <p style="color: {% if dm[2] == 'admin' %}gold{% else %}#ddd{% endif %};">
+                        {{ dm[2]|capitalize }}: {{ dm[3] }}
+                    </p>
+                    <small style="color:#666;">{{ dm[4] }}</small>
+                </div>
+                {% endfor %}
+                <form method="POST"
+                    action="{{ url_for('admin_send_message', user_id=lease[5]) }}">
+                    <input type="hidden" name="lease_id" value="{{ lease[0] }}">
+                    <input type="text" name="message"
+                        placeholder="Reply to {{ lease[2] }}..." required>
+                    <button type="submit">Send</button>
+                </form>
+            </div>
+            {% else %}
+            <p class="empty-msg">No messages yet.</p>
+            {% endfor %}
+        </div>
+
+        <!-- COMPLAINTS -->
+        <div class="dash-section" id="complaints">
+            <div class="section-header">
+                <h1>Complaints</h1>
+                <p>{{ complaints|length }} complaints received</p>
+            </div>
+            {% for complaint in complaints %}
+            <div class="inquiry-card">
+                <div class="inquiry-top">
+                    <span class="inquiry-name">{{ complaint[6] }}</span>
+                    <span class="inquiry-id">{{ complaint[7] }}</span>
+                </div>
+                <p>{{ complaint[4] }}</p>
+            </div>
+            {% else %}
+            <p class="empty-msg">No complaints yet.</p>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function showSection(sectionId, clickedItem) {
+        document.querySelectorAll('.dash-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+        clickedItem.classList.add('active');
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const content = document.getElementById('dashboardContent');
+        const btn = document.getElementById('toggleBtn');
+
+        const isOpen = !sidebar.classList.contains('hidden');
+
+        if (isOpen) {
+            sidebar.classList.add('hidden');
+            content.style.marginLeft = '0';
+            btn.style.left = '15px';
+        } else {
+            sidebar.classList.remove('hidden');
+            content.style.marginLeft = window.innerWidth > 768 ? '260px' : '0';
+            btn.style.left = window.innerWidth > 768 ? '270px' : '15px';
+        }
+    }
+
+    window.addEventListener('load', function() {
+        if (window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.add('hidden');
+            document.getElementById('toggleBtn').style.left = '15px';
+            document.getElementById('dashboardContent').style.marginLeft = '0';
+        }
+    });
+</script>
+
+{% endblock %}

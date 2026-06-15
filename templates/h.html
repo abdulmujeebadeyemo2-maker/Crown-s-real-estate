@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+
+<!-- HERO SECTION -->
+<section class="hero">
+    <div class="hero-overlay">
+        <div class="hero-text">
+            <p class="hero-tag">✦ Premium Real Estate</p>
+            <h1>Find Your <span class="gold">Dream</span> Property</h1>
+            <p class="hero-sub">Luxury, affordable, and investment properties across Nigeria</p>
+        </div>
+
+        <!-- SEARCH BAR -->
+        <form class="search-bar" action="{{ url_for('search') }}" method="POST">
+            <div class="search-field">
+                <label>City</label>
+                <input type="text" name="city" placeholder="e.g. Lagos, Abuja...">
+            </div>
+            <div class="search-field">
+                <label>Status</label>
+                <select name="status">
+                    <option value="">Any</option>
+                    <option value="For Sale">For Sale</option>
+                    <option value="For Rent">For Rent</option>
+                </select>
+            </div>
+            <div class="search-field">
+                <label>Type</label>
+                <select name="property_type">
+                    <option value="">Any Type</option>
+                    <option value="apartment">Apartment</option>
+                    <option value="duplex">Duplex</option>
+                    <option value="mansion">Mansion</option>
+                    <option value="bungalow">Bungalow</option>
+                    <option value="penthouse">Penthouse</option>
+                    <option value="land">Land</option>
+                </select>
+            </div>
+            <div class="search-field">
+                <label>Min Price</label>
+                <input type="number" name="min_price" placeholder="₦ Min">
+            </div>
+            <div class="search-field">
+                <label>Max Price</label>
+                <input type="number" name="max_price" placeholder="₦ Max">
+            </div>
+            <button type="submit" class="search-btn">🔍 Search</button>
+        </form>
+    </div>
+</section>
+
+<!-- STATS STRIP -->
+<section class="stats-strip">
+    <div class="stat-item">
+        <h3>500+</h3>
+        <p>Properties Listed</p>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+        <h3>1,200+</h3>
+        <p>Happy Clients</p>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+        <h3>15+</h3>
+        <p>Years Experience</p>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+        <h3>98%</h3>
+        <p>Client Satisfaction</p>
+    </div>
+</section>
+
+<!-- FEATURED PROPERTIES -->
+<section class="listings-section">
+    <div class="section-title-block">
+        <p class="section-tag">✦ Handpicked For You</p>
+        <h2>Featured <span class="gold">Properties</span></h2>
+        <p class="section-sub">Explore our curated selection of premium properties</p>
+    </div>
+
+    <div class="property-grid">
+        {% for property in properties[:6] %}
+        <div class="prop-card">
+            <div class="prop-img-wrap">
+                <img src="{{ url_for('static', filename='images/' + property[7]) }}"
+                     alt="{{ property[1] }}">
+                <span class="prop-badge {{ 'badge-sale' if property[4] == 'For Sale' else 'badge-rent' }}">
+                    {{ property[4] }}
+                </span>
+            </div>
+            <div class="prop-body">
+                <p class="prop-type">{{ property[5] }}</p>
+                <h3 class="prop-name">{{ property[1] }}</h3>
+                <p class="prop-location">📍 {{ property[3] }}</p>
+                <div class="prop-footer">
+                    <span class="prop-price">₦{{ "{:,}".format(property[2]|int) }}</span>
+                    <a href="{{ url_for('property_details', id=property[0]) }}"
+                       class="prop-btn">View →</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p style="color:#888; text-align:center; grid-column: 1/-1;">
+            No properties listed yet.
+        </p>
+        {% endfor %}
+    </div>
+
+    <!-- VIEW MORE BUTTON -->
+    {% if properties|length > 6 %}
+    <div class="view-more-wrap">
+        <div class="hidden-properties" id="hiddenProps">
+            {% for property in properties[6:] %}
+            <div class="prop-card">
+                <div class="prop-img-wrap">
+                    <img src="{{ url_for('static', filename='images/' + property[7]) }}"
+                         alt="{{ property[1] }}">
+                    <span class="prop-badge {{ 'badge-sale' if property[4] == 'For Sale' else 'badge-rent' }}">
+                        {{ property[4] }}
+                    </span>
+                </div>
+                <div class="prop-body">
+                    <p class="prop-type">{{ property[5] }}</p>
+                    <h3 class="prop-name">{{ property[1] }}</h3>
+                    <p class="prop-location">📍 {{ property[3] }}</p>
+                    <div class="prop-footer">
+                        <span class="prop-price">₦{{ "{:,}".format(property[2]|int) }}</span>
+                        <a href="{{ url_for('property_details', id=property[0]) }}"
+                           class="prop-btn">View →</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button class="view-more-btn" onclick="toggleMore(this)">
+            View More Properties ↓
+        </button>
+    </div>
+    {% endif %}
+</section>
+
+<!-- WHY CHOOSE US -->
+<section class="why-section">
+    <div class="section-title-block">
+        <p class="section-tag">✦ Why Crown's</p>
+        <h2>Why Choose <span class="gold">Us</span></h2>
+    </div>
+    <div class="why-grid">
+        <div class="why-card">
+            <div class="why-icon">🏆</div>
+            <h3>Trusted Agency</h3>
+            <p>Over 15 years of excellence in real estate across Nigeria.</p>
+        </div>
+        <div class="why-card">
+            <div class="why-icon">🔑</div>
+            <h3>Premium Listings</h3>
+            <p>Every property is vetted and verified before listing.</p>
+        </div>
+        <div class="why-card">
+            <div class="why-icon">🤝</div>
+            <h3>Expert Agents</h3>
+            <p>Our agents guide you through every step of the process.</p>
+        </div>
+        <div class="why-card">
+            <div class="why-icon">💎</div>
+            <h3>Luxury Standards</h3>
+            <p>We hold every property to the highest quality standards.</p>
+        </div>
+    </div>
+</section>
+
+<!-- CTA SECTION -->
+<section class="cta-section">
+    <div class="cta-content">
+        <h2>Ready to Find Your <span class="gold">Perfect Home?</span></h2>
+        <p>Register today and get access to exclusive listings and personalised service.</p>
+        <div class="cta-buttons">
+            <a href="{{ url_for('user_register') }}" class="cta-btn-primary">Get Started</a>
+            <a href="{{ url_for('contact') }}" class="cta-btn-secondary">Contact Us</a>
+        </div>
+    </div>
+</section>
+
+<script>
+    function toggleMore(btn) {
+        const hidden = document.getElementById('hiddenProps');
+        if (hidden.style.display === 'grid') {
+            hidden.style.display = 'none';
+            btn.textContent = 'View More Properties ↓';
+        } else {
+            hidden.style.display = 'grid';
+            btn.textContent = 'Show Less ↑';
+        }
+    }
+</script>
+
+{% endblock %}

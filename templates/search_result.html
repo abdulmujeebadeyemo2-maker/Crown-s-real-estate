@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Properties available in {{city}}</h1>
+{% if results %}
+    {% for property in results %}
+
+    <div class="card">
+        <h2>{{property.name}}</h2>
+        <p>${{"{:,}".format(property.Price|int)}}</p>
+        <p>{{property.Location}}</p>
+        <p>{{property.Status}}</p>
+    </div>
+
+    {% endfor %}
+{% else %}
+<h2>No properties found in {{city}}</h2>
+{% endif %}    
+
+{% endblock %}

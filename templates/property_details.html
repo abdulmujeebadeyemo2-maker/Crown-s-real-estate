@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="property-details">
+    <a class="view-btn"
+    href="{{url_for('home')}}">🔙 back to listings</a>
+    <div class="gallary">
+        {% for image in images %}
+        <img src="{{url_for('static', filename='images/' + image[0])}}" width="500">
+        {% endfor %}
+    </div>
+    <h1>{{property[1]}}</h1>
+    <p>Price: ${{"{:,}".format(property[2]|int)}}</p>
+    <p>Location: {{property[3]}}</p>
+    <h2>Description: {{property[6]}}</h2>
+    <p class="status">{{property[4]}}</p>
+</div>
+<h2>Contact form</h2>
+{% if session.get('user_id') or session.get('admin_logged_in') %}
+<form method="POST" action="{{ url_for('send_inquiry', id=property[0]) }}">
+    <input
+    type="text"
+    name="name"
+    placeholder="Name"
+    required>
+
+    <input
+    type="text"
+    name="phone"
+    placeholder="Phone number"
+    required>
+
+    <input
+    type="text"
+    name="email"
+    placeholder="E-mail"
+    required>
+
+    <textarea
+    name="message"
+    placeholder="i'm intrested in this property"
+    required></textarea>
+
+    <button type="submit">
+        Send inquiry
+    </button>
+</form>
+{% else %}
+<div style="text-align:center; padding: 20px;">
+    <p style="color:#aaa;">You must be logged in to send an inquiry.</p>
+    <a href="{{ url_for('user_login') }}" class="view-btn">Login</a>
+    <a href="{{ url_for('user_register') }}" class="view-btn">Register</a>
+</div>
+{% endif %}
+
+{% endblock %}

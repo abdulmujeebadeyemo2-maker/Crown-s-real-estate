@@ -1,0 +1,714 @@
+from dotenv import load_dotenv
+load_dotenv()
+from flask import( Flask, render_template, request, session, redirect, url_for, flash)
+from werkzeug.security import (generate_password_hash, check_password_hash)
+from datetime import datetime, timedelta
+import bleach
+import os
+import sqlite3
+import uuid
+app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app.config['UPLOAD_FOLDER']=os.path.join(BASE_DIR, 'static', 'images')
+os.makedirs(app.config['UPLOAD_FOLDER'],exist_ok=True)
+app.secret_key = os.environ.get('SECRETE_KEY','dev-only-fallback')
+
+DB_PATH = os.path.join(BASE_DIR, 'properties.db')
+hashed_password=generate_password_hash('1968')
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS properties(
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        name TEXT, 
+        Price TEXT, 
+        Location TEXT, 
+        Status TEXT, 
+        type TEXT, 
+        description TEXT, 
+        image TEXT
+    )
+''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS admins(
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         username TEXT,
+        password TEXT
+    )
+''')
+    
+    cursor.execute("SELECT COUNT(*) FROM admins")
+    if cursor.fetchone()[0]==0:
+        admin_username = os.environ.get('ADMIN_USERNAME')
+        admin_password = os.environ.get('ADMIN_PASSWORD', 'fallback')
+        hashed_password = generate_password_hash(admin_password)
+        cursor.execute("INSERT INTO admins(username, password) VALUES(?,?)",
+               (admin_username, hashed_password))
+
+    cursor.execute('''CREATE TABLE IF NOT EXISTS users
+                   (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   username TEXT,
+                   email TEXT,
+                   password TEXT)''')
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS inquiries(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    property_id INTEGER,
+                    name TEXT,
+                    phone TEXT,
+                    email TEXT, 
+                    message TEXT
+                   )
+                   """)
+    
+    cursor.execute('''CREATE TABLE IF NOT EXISTS sales(
+                   id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   property_id INTEGER,
+                   user_id INTEGER,
+                   sale_date TEXT DEFAULT(date('now')),
+                   FOREIGN KEY(property_id)REFERENCES properties(id),
+                   FOREIGN KEY(user_id)REFERENCES users(id))''')
+    
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS leases(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        property_id INTEGER,
+        user_id INTEGER,
+        start_date TEXT,
+        duration_years INTEGER,
+        expiry_date TEXT,
+        FOREIGN KEY(property_id) REFERENCES properties(id),
+        FOREIGN KEY(user_id) REFERENCES users(id)
+    )
+''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS complaints(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lease_id INTEGER,
+            user_id INTEGER,
+            property_id INTEGER,
+            message TEXT,
+            date_sent TEXT DEFAULT (datetime('now')),
+            sender TEXT,
+            FOREIGN KEY(lease_id) REFERENCES leases(id),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+    ) 
+''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS direct_messages(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            sender TEXT,
+            message TEXT,
+            date_sent TEXT DEFAULT (datetime('now')),
+            lease_id INTEGER,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+    )
+''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS general_messages(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message TEXT,
+            date_sent TEXT DEFAULT (datetime('now'))
+    )
+''')
+    
+    cursor.execute('''CREATE TABLE IF NOT EXISTS property_images(id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   property_id INTEGER,
+                   image_name TEXT)''')
+    conn.commit()
+    conn.close()
+
+properties = [{'id':1,'name':'Luxury Duplex', 'Price':'50000', 'Location':'Abuja', 'Status':'For rent','image':'duplex.jpg', 'description':'Luxurious duplex with parking space and swimming pool', 'type':'duplex'},
+                   {'id':2,'name':'Elevated Bungalow', 'Price':'600000', 'Location':'Lagos', 'Status':'For sale','image':'bungalow.jpg', 'description':'A three bedroom bungelow with luxurious finishing', 'type':'bungalow'},
+                   {'id':3,'name':'Millioners mansion','Price':'3000000', 'Location':'Abuja', 'Status':'For sale','image':'mansion.jpg', 'description':'Mordern mansion with luxury finishing', 'type':'mansion'},
+                   {'id':4,'name':'Confortable Apartment', 'Price':'30000', 'Location':'Porthacourt', 'Status':'For rent','image':'apartment.jpg', 'description':'Mordern apartment close to the city center', 'type':'apartment'},
+                   {'id':5,'name':'Fly Penthouse', 'Price':'5000000', 'Location':'Lagos', 'Status':'For sale','image':'penthouse.jpg', 'description':'Luxurious penthouse with beautiful aerial view', 'type':'penthouse'}]
+
+@app.route('/login', methods=['GET','POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        conn = sqlite3.connect(os.path.join(app.root_path, 'properties.db'))
+        cursor = conn.cursor()
+        cursor.execute('''SELECT * FROM admins WHERE 
+                       username = ?''',
+                       (username,))
+        admin = cursor.fetchone()
+        conn.close()
+        print(admin)
+        if admin and check_password_hash(admin[2], password):
+            session['admin_logged_in'] = True
+            return redirect(url_for('admin'))
+        else:
+           flash('Invalid username or password')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('admin_logged_in', None)
+    return redirect(url_for('login'))
+
+@app.route('/user/register', methods=['GET', 'POST'])
+def user_register():
+    if session.get('user_id'):
+        return redirect(url_for('home'))
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        hashed = generate_password_hash(password)
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                'INSERT INTO users(username, email, password) VALUES(?,?,?)',
+                (username, email, hashed)
+            )
+            conn.commit()
+            conn.close()
+            flash('Account created! Please log in.')
+            return redirect(url_for('user_login'))
+        except sqlite3.IntegrityError:
+            conn.close()
+            flash('Username or email already exists.')
+            return redirect(url_for('user_register'))
+    return render_template('user_register.html')
+
+
+@app.route('/user/login', methods=['GET', 'POST'])
+def user_login():
+    if session.get('user_id'):
+        return redirect(url_for('home'))
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
+        user = cursor.fetchone()
+        conn.close()
+        if user and check_password_hash(user[3], password):
+            session['user_id'] = user[0]
+            session['user_name'] = user[1]
+            flash(f'Welcome back, {user[1]}!')
+            return redirect(url_for('home'))
+        else:
+            flash('Invalid email or password.')
+            return redirect(url_for('user_login'))
+    return render_template('user_login.html')
+
+
+@app.route('/user/logout')
+def user_logout():
+    session.pop('user_id', None)
+    session.pop('user_name', None)
+    return redirect(url_for('home'))
+
+@app.route('/admin')
+def admin():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login'))
+    conn=sqlite3.connect(DB_PATH)
+    cursor= conn.cursor()
+    cursor.execute("SELECT * FROM properties")
+    properties=cursor.fetchall()
+    cursor.execute("SELECT * FROM inquiries")
+    inquiries=cursor.fetchall()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    user_count=cursor.fetchone()[0]
+    cursor.execute("""
+                   SELECT sales.id, properties.name, users.email, sales.sale_date 
+                   FROM sales
+                   JOIN properties ON sales.property_id = properties.id
+                   JOIN users ON sales.user_id = users.id""")
+    sales = cursor.fetchall()
+    cursor.execute("""
+                   SELECT leases.id, properties.name, users.username, users.email, leases.expiry_date, users.id 
+                   FROM leases
+                   JOIN properties ON leases.property_id = properties.id
+                   JOIN users ON leases.user_id = users.id""")
+    leases = cursor.fetchall() 
+    cursor.execute('''
+        SELECT complaints.id, complaints.lease_id, complaints.property_id,
+           complaints.user_id, complaints.message, complaints.date_sent,
+           users.username, properties.name
+        FROM complaints
+        JOIN users ON complaints.user_id = users.id
+        JOIN properties ON complaints.property_id = properties.id''')
+    complaints = cursor.fetchall()
+
+    cursor.execute('SELECT * FROM direct_messages ORDER BY date_sent DESC')
+    all_messages = cursor.fetchall()   
+    conn.close()
+    return render_template('admin.html',
+                            properties=properties,
+                            inquiries=inquiries,
+                            user_count=user_count,
+                            property_count=len(properties),
+                            inquiry_count=len(inquiries),
+                            sales=sales,
+                            leases=leases,
+                            all_messages=all_messages,
+                            complaints=complaints)
+
+@app.route('/admin/users_list/<int:property_id>/')
+def users_list(property_id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login'))
+    conn=sqlite3.connect(DB_PATH)
+    cursor=conn.cursor()
+    # Only get users who sent an inquiry for this property
+    cursor.execute('''
+        SELECT DISTINCT users.id, users.username, users.email,
+               inquiries.phone, inquiries.message
+        FROM users
+        JOIN inquiries ON users.email = inquiries.email
+        WHERE inquiries.property_id = ?
+    ''', (property_id,))
+    inquired_users = cursor.fetchall()
+
+    if not inquired_users:
+        cursor.execute('''SELECT id, username, email, NULL, NULL FROM users''')
+        rows=cursor.fetchall()
+        inquired_users=[(r[0], r[1], r[2], ",") for r in rows]
+
+    cursor.execute('SELECT * FROM properties WHERE id = ?', (property_id,))
+    property = cursor.fetchone()
+    conn.close()
+    return render_template('users_list.html',
+                           users=inquired_users,
+                           property=property)
+
+@app.route('/admin/sell/<int:property_id>/<int:user_id>')
+def sell_property(property_id, user_id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login'))
+    conn=sqlite3.connect(DB_PATH)
+    cursor= conn.cursor()
+    cursor.execute("INSERT INTO sales(property_id, user_id) VALUES(?,?)", (property_id, user_id))
+    cursor.execute("UPDATE properties SET Status = 'Sold' WHERE id = ?", (property_id,))
+    conn.commit()
+    conn.close()
+    flash('Propery successfully sold.')
+    return redirect(url_for('admin'))
+
+# ─── LEASE PROPERTY (updated to accept duration) ───
+@app.route('/admin/lease/<int:property_id>/<int:user_id>', methods=['GET', 'POST'])
+def lease_property(property_id, user_id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        duration_years = int(request.form['duration_years'])
+        start_date = datetime.now()
+        expiry_date = start_date + timedelta(days=365 * duration_years)
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO leases(property_id, user_id, start_date, duration_years, expiry_date)
+            VALUES(?, ?, ?, ?, ?)
+        ''', (property_id, user_id,
+              start_date.strftime('%Y-%m-%d %H:%M:%S'),
+              duration_years,
+              expiry_date.strftime('%Y-%m-%d %H:%M:%S')))
+        cursor.execute(
+            "UPDATE properties SET Status = 'Leased' WHERE id = ?",
+            (property_id,)
+        )
+        conn.commit()
+        conn.close()
+        flash('Property successfully leased.')
+        return redirect(url_for('admin'))
+    return render_template('lease_form.html',
+                           property_id=property_id,
+                           user_id=user_id)
+
+# ADMIN DELETE INQUIRY
+@app.route('/admin/delete_inquiry/<int:inquiry_id>')
+def delete_inquiry(inquiry_id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login'))
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM inquiries WHERE id = ?', (inquiry_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('admin'))
+
+
+# USER DELETE MESSAGE
+@app.route('/user/delete_message/<int:message_id>')
+def delete_message(message_id):
+    if not session.get('user_id'):
+        return redirect(url_for('user_login'))
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    # Make sure user can only delete their own messages
+    cursor.execute(
+        'DELETE FROM direct_messages WHERE id = ? AND user_id = ?',
+        (message_id, session['user_id'])
+    )
+    conn.commit()
+    conn.close()
+    return redirect(url_for('dashboard'))
+
+
+# ─── USER DASHBOARD ───
+@app.route('/dashboard')
+def dashboard():
+    if not session.get('user_id'):
+        return redirect(url_for('user_login'))
+    user_id = session['user_id']
+    now = datetime.now()
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    # Check and expire leases
+    cursor.execute('''
+        SELECT leases.id FROM leases
+        WHERE user_id = ? AND expiry_date <= ?
+    ''', (user_id, now.strftime('%Y-%m-%d %H:%M:%S')))
+    expired = cursor.fetchall()
+
+    # Get active leases with property info
+    cursor.execute('''
+        SELECT leases.id, leases.property_id, properties.name,
+               properties.location, leases.start_date,
+               leases.expiry_date, leases.duration_years
+        FROM leases
+        JOIN properties ON leases.property_id = properties.id
+        WHERE leases.user_id = ? AND leases.expiry_date > ?
+    ''', (user_id, now.strftime('%Y-%m-%d %H:%M:%S')))
+    active_leases = cursor.fetchall()
+
+    # Get direct messages for this user
+    cursor.execute('''
+        SELECT * FROM direct_messages
+        WHERE user_id = ?
+        ORDER BY date_sent DESC
+    ''', (user_id,))
+    direct_messages = cursor.fetchall()
+
+    # Get general messages
+    cursor.execute('''
+        SELECT * FROM general_messages
+        ORDER BY date_sent DESC
+    ''')
+    general_messages = cursor.fetchall()
+
+    conn.close()
+    return render_template('user_dashboard.html',
+                           active_leases=active_leases,
+                           expired=expired,
+                           direct_messages=direct_messages,
+                           general_messages=general_messages,
+                           now=now.strftime('%Y-%m-%d %H:%M:%S'))
+
+
+# ─── USER COMPLAINT ───
+@app.route('/complaint/<int:lease_id>', methods=['POST'])
+def submit_complaint(lease_id):
+    if not session.get('user_id'):
+        return redirect(url_for('user_login'))
+    message = bleach.clean(request.form['message'])
+    user_id = session['user_id']
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT property_id FROM leases WHERE id = ?', (lease_id,))
+    lease = cursor.fetchone()
+    cursor.execute('''
+        INSERT INTO complaints(lease_id, user_id, property_id, message, sender)
+        VALUES(?, ?, ?, ?, 'user')
+    ''', (lease_id, user_id, lease[0], message))
+    conn.commit()
+    conn.close()
+    flash('Complaint submitted successfully.')
+    return redirect(url_for('dashboard'))
+
+
+# ─── USER SENDS DIRECT MESSAGE ───
+@app.route('/message/send/<int:lease_id>', methods=['POST'])
+def user_send_message(lease_id):
+    if not session.get('user_id'):
+        return redirect(url_for('user_login'))
+    message = bleach.clean(request.form['message'])
+    user_id = session['user_id']
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO direct_messages(user_id, sender, message, lease_id)
+        VALUES(?, 'user', ?, ?)
+    ''', (user_id, message, lease_id))
+    conn.commit()
+    conn.close()
+    flash('Message sent.')
+    return redirect(url_for('dashboard'))
+
+
+# ─── ADMIN SENDS DIRECT MESSAGE TO USER ───
+@app.route('/admin/message/<int:user_id>', methods=['POST'])
+def admin_send_message(user_id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login'))
+    message = bleach.clean(request.form['message'])
+    lease_id = request.form.get('lease_id', 0)
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO direct_messages(user_id, sender, message, lease_id)
+        VALUES(?, 'admin', ?, ?)
+    ''', (user_id, message, lease_id))
+    conn.commit()
+    conn.close()
+    flash('Message sent to user.')
+    return redirect(url_for('admin'))
+
+
+# ─── ADMIN SENDS GENERAL MESSAGE TO ALL USERS ───
+@app.route('/admin/broadcast', methods=['POST'])
+def broadcast_message():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login'))
+    message = bleach.clean(request.form['message'])
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('INSERT INTO general_messages(message) VALUES(?)', (message,))
+    conn.commit()
+    conn.close()
+    flash('Broadcast message sent to all users.')
+    return redirect(url_for('admin'))
+
+
+# ─── HOMEPAGE NOW PUBLIC ───
+@app.route('/')
+def home():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM properties')
+    properties = cursor.fetchall()
+    conn.close()
+    return render_template('h.html', properties=properties)
+
+
+# ─── INQUIRY: redirect to login if not logged in ───
+@app.route('/send_inquiry/<int:id>', methods=['POST'])
+def send_inquiry(id):
+    if not session.get('user_id') and not session.get('admin_logged_in'):
+        flash('Please log in to send an inquiry.')
+        return redirect(url_for('user_login'))
+    name = bleach.clean(request.form['name'])
+    phone = bleach.clean(request.form['phone'])
+    email = bleach.clean(request.form['email'])
+    message = bleach.clean(request.form['message'])
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO inquiries(property_id, name, phone, email, message)
+        VALUES(?, ?, ?, ?, ?)
+    ''', (id, name, phone, email, message))
+    conn.commit()
+    conn.close()
+    flash('Inquiry sent successfully.')
+    return redirect(url_for('property_details', id=id))
+
+@app.route('/prop_db')
+def prop_db():
+    conn = sqlite3.connect(os.path.join(app.root_path, 'properties.db'))
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM properties')
+    rows = cursor.fetchall()
+    conn.close()
+    return str(rows)
+
+@app.route('/add_property', methods=['POST'])
+def add_property():
+    print('upload folder:', app.config['UPLOAD_FOLDER'])
+    print('Exists:', os.path.exists(app.config['UPLOAD_FOLDER']))
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login'))
+    name = request.form['name']
+    Price = request.form['Price']
+    Location = request.form['Location']
+    Status = request.form['Status']
+    property_type = request.form['type']
+    description = request.form['description']
+
+    images = request.files.getlist('images')
+    print("Number of images recieved:", len(images))
+    for i, img in enumerate(images):
+        print(f"image{i}: filename='{img.filename}'")
+    cover_image=""
+    if images and images[0].filename:
+        ext = os.path.splitext(images[0].filename)[1]
+        cover_image= str(uuid.uuid4())+ext 
+        images[0].save(os.path.join(app.config['UPLOAD_FOLDER'], cover_image))
+
+    conn = sqlite3.connect(os.path.join(app.root_path, 'properties.db'))
+    cursor = conn.cursor()
+    cursor.execute('''INSERT INTO properties(name, Price, Location, Status, type, description, image)
+                   VALUES(?,?,?,?,?,?,?)
+               ''',(
+                   name,
+                   Price,
+                   Location,
+                   Status,
+                   property_type,
+                   description,
+                   cover_image
+               ))
+    property_id =cursor.lastrowid
+    for image in images[1:]:
+        if image.filename:
+            ext = os.path.splitext(image.filename)[1]
+            filename = str(uuid.uuid4())+ext 
+            image_path=os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            image.save(image_path)
+            cursor.execute('''INSERT INTO property_images(property_id, image_name)
+            VALUES(?,?)''',(property_id,
+                            filename))
+    if cover_image:
+        cursor.execute("INSERT INTO property_images(property_id, image_name) VALUES(?,?)",(property_id, cover_image))        
+    conn.commit()
+    conn.close()
+    return redirect(url_for('home'))
+
+@app.route('/delete_property/<int:id>')
+def delete_property(id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login'))
+    conn=sqlite3.connect(DB_PATH)
+    cursor= conn.cursor()
+    cursor.execute("DELETE FROM properties WHERE id=?",(id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('admin'))
+
+@app.route('/edit_property/<int:id>', methods=['GET', 'POST'])
+def edit_property(id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login'))
+    conn=sqlite3.connect(DB_PATH)
+    cursor=conn.cursor()
+    if request.method == 'POST':
+        name=request.form['name']
+        Price=request.form['Price']
+        Location=request.form['Location']
+        Status=request.form['Status']
+        type=request.form['type']
+        description=request.form['description']
+        cursor.execute("""
+            UPDATE properties 
+            SET
+                name=?, 
+                Price=?, 
+                Location=?, 
+                Status=?,
+                type=?, 
+                description=? 
+            WHERE id=?
+        """,(
+            name,
+            Price, 
+            Location, 
+            Status,
+            type,
+            description,
+            id
+        ))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('admin'))
+    cursor.execute(
+        "SELECT * FROM properties WHERE id=?",
+        (id,)
+    )
+    property = cursor.fetchone()
+    conn.close()
+    return render_template('edit_property.html', property=property)
+
+
+@app.route('/search', methods=['GET','POST'])
+def search():
+    if not session.get('user_id') and not session.get('admin_logged_in'):
+        return redirect(url_for('user_login'))
+    if request.method == 'POST':
+        min_price = request.form['min_price']
+        max_price = request.form['max_price']
+        property_type = request.form['property_type']
+        city=request.form['city']
+        status=request.form['status']
+        results = []
+        for property in properties:
+            price = int(property['Price'])
+            min_match = (min_price == '' or price >= int(min_price))
+            max_match = (max_price == '' or price <=int(max_price))
+            type_match = (property_type == '' or property['type'] == property_type)
+            city_match = (city == '' or property['Location'].lower() == city.lower())
+            status_match = (status == '' or property['Status'] == status)
+            if (city_match 
+                and status_match 
+                and type_match 
+                and min_match 
+                and max_match):
+                results.append(property)
+        return render_template('search_result.html', city=city, results = results)
+    return render_template('search.html')
+
+@app.route('/property/<int:id>')
+def property_details(id):
+    if not session.get('user_id') and not session.get('admin_logged_in'):
+        return redirect(url_for('user_login'))
+    conn=sqlite3.connect(DB_PATH)
+    cursor= conn.cursor()
+    cursor.execute("SELECT * FROM properties")
+    properties=cursor.fetchall()
+    cursor.execute('''SELECT image_name FROM property_images WHERE property_id=?''',(id,))
+    images=cursor.fetchall()
+    selected_property = None
+    for property in properties:
+        if property[0] == id:
+            selected_property = property
+            break
+    conn.close()    
+    return render_template('property_details.html', property = selected_property, images=images)
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'),404
+
+@app.route("/about")
+def about():
+    return render_template('about.html')
+
+@app.route("/contact", methods=['GET', 'POST'])
+def contact():
+    if not session.get('user_id') and not session.get('admin_logged_in'):
+        return redirect(url_for('user_login'))
+    if request.method == 'POST':
+        name = bleach.clean(request.form['name'])
+        phone = bleach.clean(request.form['phone'])
+        email = bleach.clean(request.form['email'])
+        subject = bleach.clean(request.form['subject'])
+        message = bleach.clean(request.form['message'])
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO inquiries(property_id, name, phone, email, message)
+            VALUES(?, ?, ?, ?, ?)
+        ''', (0, name, phone, email, subject + ' — ' + message))
+        conn.commit()
+        conn.close()
+        flash('Your message has been sent. We will get back to you shortly.')
+        return redirect(url_for('contact'))
+    return render_template('contact.html')
+
+init_db()
+
+if __name__=='__main__':
+    app.run(debug=True)

@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+
+<div class="dash-page">
+    <h1 class="dash-title">My Dashboard</h1>
+    <p class="dash-sub">Welcome, {{ session['user_name'] }}</p>
+
+    <!-- GENERAL MESSAGES -->
+    {% if general_messages %}
+    <div class="general-msg-bar">
+        <h3>🗣</i> Notice from Crown's Real Estate</h3>
+        {% for gm in general_messages %}
+        <div class="general-msg-item">
+            <p>{{ gm[1] }}</p>
+            <span>{{ gm[2] }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ACTIVE LEASES -->
+    <h2 class="section-title">My Leased Properties</h2>
+    {% if active_leases %}
+    <div class="lease-grid">
+        {% for lease in active_leases %}
+        <div class="lease-card">
+            <div class="lease-card-header" onclick="toggleCard('card-{{lease[0]}}')">
+                <h3>{{ lease[2] }}</h3>
+                <p>📍 {{ lease[3] }}</p>
+                <p class="lease-status active-lease">Active</p>
+            </div>
+            <div class="lease-card-body" id="card-{{ lease[0] }}">
+                <div class="lease-dates">
+                    <div class="date-box">
+                        <span>Start Date</span>
+                        <strong>{{ lease[4] }}</strong>
+                    </div>
+                    <div class="date-box">
+                        <span>Expiry Date</span>
+                        <strong>{{ lease[5] }}</strong>
+                    </div>
+                </div>
+
+                <!-- COUNTDOWN TIMER -->
+                <div class="countdown-box">
+                    <p>Time Remaining</p>
+                    <div class="countdown"
+                         data-expiry="{{ lease[5] }}"
+                         id="timer-{{ lease[0] }}">
+                        Calculating...
+                    </div>
+                </div>
+
+                <!-- DIRECT MESSAGES FOR THIS LEASE -->
+                <div class="msg-section">
+                    <h4>Messages</h4>
+                    {% for dm in direct_messages if dm[5] == lease[0] %}
+                    <div class="msg-bubble {{ dm[2] }}">
+                        <p>{{ dm[3] }}</p>
+                        <span>{{ dm[2]|capitalize }} · {{ dm[4] }}</span>
+                        {% if dm[2] == 'user' %}
+                        <a href="{{ url_for('delete_message', message_id=dm[0]) }}"
+                            onclick="return confirm('Delete this message?')"
+                            style="color:#ff6b6b; font-size:11px; text-decoration:none;">
+                            🗑 Delete
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <form method="POST"
+                          action="{{ url_for('user_send_message', lease_id=lease[0]) }}">
+                        <input type="text" name="message"
+                               placeholder="Send a message to admin..." required>
+                        <button type="submit">Send</button>
+                    </form>
+                </div>
+
+                <!-- COMPLAINT FORM -->
+                <div class="complaint-section">
+                    <h4>Submit a Complaint</h4>
+                    <form method="POST"
+                          action="{{ url_for('submit_complaint', lease_id=lease[0]) }}">
+                        <textarea name="message"
+                                  placeholder="Describe your complaint..."
+                                  required></textarea>
+                        <button type="submit">Submit Complaint</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-msg">You have no active leased properties.</p>
+    {% endif %}
+
+    <!-- EXPIRED LEASES -->
+    {% if expired %}
+    <h2 class="section-title" style="color:#ff6b6b;">Expired Leases</h2>
+    <p style="color:#888;">
+        The following leases have expired.
+        Contact us to renew.
+    </p>
+    {% endif %}
+</div>
+
+<script>
+    // Countdown timer
+    document.querySelectorAll('.countdown').forEach(function(el) {
+        const expiry = new Date(el.dataset.expiry).getTime();
+        function update() {
+            const now = new Date().getTime();
+            const diff = expiry - now;
+            if (diff <= 0) {
+                el.innerHTML = 'Lease Expired';
+                el.style.color = '#ff6b6b';
+                return;
+            }
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+            el.innerHTML = days + 'd ' + hours + 'h ' + mins + 'm ' + secs + 's';
+        }
+        update();
+        setInterval(update, 1000);
+    });
+
+    // Toggle card open/close
+    function toggleCard(id) {
+        const body = document.getElementById(id);
+        body.classList.toggle('open');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<link rel="stylesheet" href="{{url_for('static', filename='admin.css')}}">
+<div class="dashboard-wrapper">
+    <div class="dashboard-content" style="margin-left: 0;">
+        <div class="section-header">
+            <h1> Assign Property</h1>
+            <p>{{ property[1]}} __ {{property[3]}} __ &#8358;{{"{:,}".format(property[2]|int)}}}</p>
+        </div>
+        <p style="color:#aaa; margin-bottom: 20px;">
+            Select a user to assign this property to:
+        </p>
+        {% for user in users %}
+        <div class="table-card">
+            <div class="table-card-info">
+                <h3>{{user[1]}}</h3>
+                <p>✉{{user[2]}}</p>
+            </div>
+            <div class="table-card-actions">
+                {% if property[4] == 'For Sale' or property[4] == 'for sale' or property[4] == 'FOR SALE' %}
+                <a href="{{ url_for('sell_property', property_id=property[0], user_id=user[0]) }}"
+                    class="view-btn">💰 Sell to {{ user[1] }}</a>
+                {% elif property[4] == 'For Rent' or property[4] == 'for rent' or property[4] == 'FOR RENT' %}
+                <a href="{{ url_for('lease_property', property_id=property[0], user_id=user[0]) }}"
+                    class="view-btn">🔑 Lease to {{ user[1] }}</a>
+                {% else %}
+                <span style="color:gold; font-size:13px;">{{ property[4] }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <p class="empty-msg">No registerd user yet.</p>
+        {% endfor %}
+        <a href="{{url_for('admin')}}" class="delete-btn" style="display:inline-block; margin-top: 20px;">
+            🔙 Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

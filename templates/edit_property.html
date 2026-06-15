@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Edit property</h1>
+<form method="POST">
+    <input
+    type="text"
+    name="name"
+    value="{{property[1]}}">
+    <br><br>
+    <input
+    type="text"
+    name="Price"
+    value="{{property[2]}}">
+    <br><br>
+    <input
+    type="text"
+    name="Location"
+    value="{{property[3]}}">
+    <br><br>
+    <select name="Status" required>
+        <option value="">Select Status</option>
+        <option value="For Sale">For Sale</option>
+        <option value="For Rent">For Rent</option>
+    </select>
+    <br><br>
+    <select name="type" required>
+        <option value="">Select Type</option>
+        <option value="duplex">Duplex</option>
+        <option value="mansion">Mansion</option>
+        <option value="apartment">Apartment</option>
+        <option value="bungalow">Bungalow</option>
+        <option value="penthouse">Penthouse</option>
+        <option value="land">Land</option>
+    </select>
+    <br><br>
+    <textarea
+    name="description">{{property[6]}}</textarea>
+    <br><br>
+    <button type="submit">
+        Save Changes
+    </button>
+</form>
+{% endblock %}

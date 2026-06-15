@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="login-page">
+    <div class="login-overlay">
+        <div class="login-card">
+            <h1>CROWN'S</h1>
+            <P>Create Account</P>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <p style="color:red; text-align: center;">{{messages[0]}}</p>
+                {% endif %}
+            {% endwith %}
+            <form method="POST" autocomplete="off">
+                <input 
+                type="text"
+                name="username"
+                placeholder="Username"
+                autocomplete="off"
+                required>
+
+                <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                autocomplete="off"
+                required>
+
+                
+                <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                autocomplete="new-password"
+                required>
+
+                <button type="submit">
+                  Create Account
+                </button>
+
+            </form>
+            <p style="margin-top: 15px; text-align: center;">
+                Already have an account?
+                <a href="{{url_for('user_login')}}" style="color: gold;">Login</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

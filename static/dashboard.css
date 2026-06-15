@@ -1,0 +1,241 @@
+.dash-page {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.dash-title {
+    color: gold;
+    font-size: 32px;
+    margin-bottom: 5px;
+}
+
+.dash-sub {
+    color: #888;
+    margin-bottom: 30px;
+}
+
+.section-title {
+    color: gold;
+    font-size: 20px;
+    margin: 30px 0 15px;
+    border-bottom: 1px solid rgba(255,215,0,0.15);
+    padding-bottom: 8px;
+}
+
+/* GENERAL MESSAGE BAR */
+.general-msg-bar {
+    background: rgba(255,215,0,0.07);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.general-msg-bar h3 {
+    color: gold;
+    margin: 0 0 12px;
+    font-size: 16px;
+}
+
+.general-msg-item {
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding: 10px 0;
+}
+
+.general-msg-item p {
+    color: #ddd;
+    margin: 0 0 4px;
+}
+
+.general-msg-item span {
+    color: #666;
+    font-size: 12px;
+}
+
+/* LEASE GRID */
+.lease-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* LEASE CARD */
+.lease-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.lease-card:hover {
+    border-color: gold;
+}
+
+.lease-card-header {
+    padding: 20px;
+}
+
+.lease-card-header h3 {
+    color: gold;
+    margin: 0 0 6px;
+    font-size: 18px;
+}
+
+.lease-card-header p {
+    color: #aaa;
+    margin: 4px 0;
+    font-size: 13px;
+}
+
+.lease-status {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.active-lease {
+    background: rgba(0,200,100,0.15);
+    color: #00c864;
+    border: 1px solid #00c864;
+}
+
+/* CARD BODY — hidden until clicked */
+.lease-card-body {
+    display: none;
+    padding: 0 20px 20px;
+    border-top: 1px solid rgba(255,215,0,0.1);
+}
+
+.lease-card-body.open {
+    display: block;
+}
+
+/* DATES */
+.lease-dates {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.date-box {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+}
+
+.date-box span {
+    display: block;
+    color: #888;
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.date-box strong {
+    color: white;
+    font-size: 13px;
+}
+
+/* COUNTDOWN */
+.countdown-box {
+    background: rgba(255,215,0,0.05);
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.countdown-box p {
+    color: #888;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+}
+
+.countdown {
+    color: gold;
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+/* MESSAGES */
+.msg-section {
+    margin-bottom: 20px;
+}
+
+.msg-section h4,
+.complaint-section h4 {
+    color: #aaa;
+    font-size: 13px;
+    text-transform: uppercase;
+    margin: 0 0 10px;
+}
+
+.msg-bubble {
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    max-width: 85%;
+}
+
+.msg-bubble.admin {
+    background: rgba(255,215,0,0.08);
+    border: 1px solid rgba(255,215,0,0.2);
+    margin-left: auto;
+}
+
+.msg-bubble.user {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.msg-bubble p {
+    color: #ddd;
+    margin: 0 0 4px;
+    font-size: 14px;
+}
+
+.msg-bubble span {
+    color: #666;
+    font-size: 11px;
+}
+
+.msg-section input,
+.complaint-section textarea {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    box-sizing: border-box;
+    margin-bottom: 8px;
+}
+
+.complaint-section textarea {
+    height: 80px;
+    resize: vertical;
+}
+
+.msg-section button,
+.complaint-section button {
+    background: gold;
+    color: black;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 13px;
+}
