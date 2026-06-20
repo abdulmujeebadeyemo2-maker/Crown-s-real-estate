@@ -61,7 +61,7 @@
                         <span>{{ dm[2]|capitalize }} · {{ dm[4] }}</span>
                         {% if dm[2] == 'user' %}
                         <a href="{{ url_for('delete_message', message_id=dm[0]) }}"
-                            onclick="return confirm('Delete this message?')"
+                            onclick="return confirm('Delete this message%s')"
                             style="color:#ff6b6b; font-size:11px; text-decoration:none;">
                             🗑 Delete
                         </a>

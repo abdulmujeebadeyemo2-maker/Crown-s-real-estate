@@ -4,10 +4,10 @@
 <div class="dashboard-content" style="margin-left:0;">
     <div class="section-header">
         <h1>Set Lease Duration</h1>
-        <p>How many years is this lease for?</p>
+        <p>How many years is this lease for%s</p>
     </div>
     <div class="admin-form">
-        <form method="POST" action="{{url_for('lease_property', property_id, user_id=user_id)}}">
+        <form method="POST" action="{{url_for('lease_property', property_id=property_id, user_id=user_id)}}">
             <input type="number" name="duration_years"
                    placeholder="Number of years e.g. 2"
                    min="1" max="99" required>

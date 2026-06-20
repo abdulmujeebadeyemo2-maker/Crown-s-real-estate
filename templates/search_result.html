@@ -7,10 +7,10 @@
     {% for property in results %}
 
     <div class="card">
-        <h2>{{property.name}}</h2>
-        <p>${{"{:,}".format(property.Price|int)}}</p>
-        <p>{{property.Location}}</p>
-        <p>{{property.Status}}</p>
+        <h2>{{property[1]}}</h2>
+        <p>${{"{:,}".format(property[2]|int)}}</p>
+        <p>{{property[3]}}</p>
+        <p>{{property[4]}}</p>
     </div>
 
     {% endfor %}
