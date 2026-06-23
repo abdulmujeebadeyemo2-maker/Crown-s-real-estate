@@ -8,7 +8,16 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import uuid
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import logging
+from logging import StreamHandler
 app = Flask(__name__)
+limiter = Limiter(get_remote_address,app= app, default_limits=["200 per day", "50 per hour"])
+@app.before_request
+def log_request_info():
+    real_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    app.logger.info(f"IP: {real_ip} | Path:{request.path} |Method: {request.method} | User Agent: {request.headers.get('User-Agent')}")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.config['UPLOAD_FOLDER']=os.path.join(BASE_DIR, 'static', 'images')
 os.makedirs(app.config['UPLOAD_FOLDER'],exist_ok=True)
@@ -128,6 +137,7 @@ def init_db():
     conn.close()
 
 @app.route('/login', methods=['GET','POST'])
+@limiter.limit("5 per minute")  # Limit to 5 login attempts per minute
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -180,6 +190,7 @@ def user_register():
 
 
 @app.route('/user/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")  # Limit to 5 login attempts per minute
 def user_login():
     if session.get('user_id'):
         return redirect(url_for('home'))
